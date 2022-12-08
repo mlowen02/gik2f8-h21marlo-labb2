@@ -85,26 +85,42 @@ function renderList() {
   api.getAll().then((tasks) => {
     todoListElement.innerHTML = '';
     if (tasks && tasks.length > 0) {
-      tasks.forEach((task) => {
+      //sortera först efter klar eller ej, sedan datum
+      const completedTasks = tasks.filter(task => task.completed == true);
+      const notCompletedTasks = tasks.filter(task => task.completed != true);
+      const orderedCTasks = completedTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+      const orderedNTasks = notCompletedTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+      const finalList = [...orderedNTasks, ...orderedCTasks];
+      finalList.forEach((task) => {
         todoListElement.insertAdjacentHTML('beforeend', renderTask(task));
       });
     }
   });
 }
 
-function renderTask({ id, title, description, dueDate }) {
+function renderTask({ id, title, description, dueDate, completed}) {
   let html = `
-    <li class="select-none mt-2 py-2 border-b border-amber-300">
-      <div class="flex items-center">
-        <h3 class="mb-3 flex-1 text-xl font-bold text-pink-800 uppercase">${title}</h3>
-        <div>
-          <span>${dueDate}</span>
-          <button onclick="deleteTask(${id})" class="inline-block bg-amber-500 text-xs text-amber-900 border border-white px-3 py-1 rounded-md ml-2">Ta bort</button>
-        </div>
-      </div>`;
+    <li style ="display: flex; flex-direction: row;`;
+    //mer genomskinlig om uppgift klar
+    completed && (html += `opacity: .35;`);
+    html+= `" class="select-none mt-2 py-2 border-b border-amber-300">
+      <input onclick="toggleCompleted(event, ${id})" style="width: 1.5rem; margin-right: 1rem;" type="checkbox" id="checkbox${id}" name="checkbox${id}" 
+      `;
+      //checkad ruta om uppgift klar
+      completed && (html+= `checked`);
+      html+=`>
+      <div>
+        <div class="flex items-center">
+          <h3 style="margin-right: 1rem;" class="mb-3 flex-1 text-xl font-bold text-pink-800 uppercase">${title}</h3>
+          <div>
+            <span>${dueDate}</span>
+            <button onclick="deleteTask(${id})" class="inline-block bg-amber-500 text-xs text-amber-900 border border-white px-3 py-1 rounded-md ml-2">Ta bort</button>
+          </div>
+        </div>`;
   description &&
     (html += `
-      <p class="ml-8 mt-2 text-xs italic">${description}</p>
+        <p class="ml-8 mt-2 text-xs italic">${description}</p>
+      </div>
   `);
   html += `
     </li>`;
@@ -116,6 +132,16 @@ function deleteTask(id) {
   api.remove(id).then((result) => {
     renderList();
   });
+}
+
+function toggleCompleted(e, id){
+  //basera på checkad ruta
+  const taskCompleted = e.target.checked;
+  const task = {
+    completed: taskCompleted
+  };
+  //uppdatera och visualisera
+  api.update(id, task).then(data => renderList());
 }
 
 renderList();

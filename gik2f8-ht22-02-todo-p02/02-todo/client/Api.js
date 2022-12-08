@@ -43,4 +43,17 @@ class Api {
       .then((result) => result)
       .catch((err) => console.log(err));
   }
+
+  update(id, data){
+    //formatera data
+    const JSONData = JSON.stringify(data);
+    //gör anrop
+    return fetch(`${this.url}/${id}`, {
+      method: 'PATCH',
+      body: JSONData,
+      headers: {
+        'content-type': 'application/json'
+      }
+    });
+  }
 }

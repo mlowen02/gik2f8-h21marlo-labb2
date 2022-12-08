@@ -63,4 +63,34 @@ app.delete('/tasks/:id', async (req, res) => {
     res.status(500).send({ error: error.stack });
   }
 });
+
+app.patch('/tasks/:id', async (req,res) =>{
+  try {
+    // spara input i variabler
+    const newData = req.body;
+    const id = req.params.id;
+    //hämta från fil
+    const listBuffer = await fs.readFile('./tasks.json');
+    const currentTasks = JSON.parse(listBuffer);
+    if (currentTasks.length > 0){
+      //hitta uppgift med angett id
+      let foundTask =  currentTasks.filter(task => task.id == id);
+      //om hittad
+      if(foundTask.length == 1){
+        //skriv över data
+        Object.assign(foundTask[0], newData);
+        //all data utom med angett id
+        const newTaskList = currentTasks.filter(task => task.id != id);
+        //skriv till fil
+        await fs.writeFile('./tasks.json', JSON.stringify([...newTaskList, foundTask[0]]));
+        //svara på anrop
+        res.send(foundTask);
+      }else{
+        res.status(500).send({message: "unable to find task with id: " + id})
+      } 
+    } 
+  } catch (error) {
+    res.status(500).send({ error: error.stack });
+  }
+});
 app.listen(PORT, () => console.log('Server running on http://localhost:5000'));
